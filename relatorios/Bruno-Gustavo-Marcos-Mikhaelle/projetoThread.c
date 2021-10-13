@@ -35,7 +35,7 @@ int resultadoUrna ( int Candidato[], int tipoCandidato) {
 			tamanhoMin = 9999;
 		}
 	}
-
+#pragma omp parallel for
 	for(int i = tamanhoMax-1; i>=tamanhoMin; --i) {
 		if ( quantidadeVotos < Candidato[i] ) {
 			quantidadeVotos = Candidato[i];
@@ -189,46 +189,97 @@ int main(int argc, char *argv[]) {
 	}
 
 
+
+	char stringResultadoSenadores[100000] = "";
+	char stringResultadoFederais[100000] = "";
+	char stringResultadoEstaduais[100000] = "";
+
+
 	int numeroVoto = 0;
+	char buffer[10] = "";
 
-	// pega numero do candidato presidente com maior voto
-	for(int i = 0; i<100; ++i) {
-		if ( numeroVoto < Presidentes[i]){
-			 numeroVoto = Presidentes[i];
-			 numeroCandidato = i;
+#pragma omp parallel 
+{
+
+	#pragma omp sections
+	{
+		#pragma omp section
+		{
+		// pega numero do candidato presidente com maior voto
+			for(int i = 0; i<100; ++i) {
+				if ( numeroVoto < Presidentes[i]){
+					numeroVoto = Presidentes[i];
+					numeroCandidato = i;
+				}
+			}
+			// verifica se votos é maior que 51% dos votos válidos
+			if( ( (float)Presidentes[numeroCandidato]/(float)votosPresidente ) >= ganhouPrimeiroTurno ) {
+				printf("%d\n", numeroCandidato);
+
+			}else {
+				  printf("Segundo turno\n");
+			}
+
 		}
+		
+		#pragma omp section
+		{
+		// calcula resultado da urna para os senadores
+			while( numeroSenadores > 0 ) {
+
+				if (numeroSenadores > 1) {
+					sprintf(buffer, "%d ", resultadoUrna(Senadores,1 ));
+					strcat(stringResultadoSenadores, buffer);
+				}
+				else {
+					sprintf(buffer, "%d\n", resultadoUrna(Senadores,1 ));
+					strcat(stringResultadoSenadores, buffer);
+				}
+				numeroSenadores--;
+			}
+		}
+
+		#pragma omp section
+		{
+		// calcula resultado da urna para os deputados federais
+			while( numeroFederal > 0 ) {
+
+				if (numeroFederal > 1) {
+					sprintf(buffer, "%d ", resultadoUrna(Federal,2 ));
+					strcat(stringResultadoFederais, buffer);
+				}
+				else {
+					sprintf(buffer, "%d\n", resultadoUrna(Federal,2 ));
+					strcat(stringResultadoFederais, buffer);
+				}
+				numeroFederal--;
+			}
+		}
+
+		#pragma omp section
+		{
+		// calcula resultado da urna para os deputados estaduais
+			while( numeroEstadual > 0 ) {
+
+				if (numeroEstadual > 1) {
+					sprintf(buffer, "%d ", resultadoUrna(Estadual,3 ));
+					strcat(stringResultadoEstaduais, buffer);
+				}
+				else {
+					sprintf(buffer, "%d\n", resultadoUrna(Estadual,3 ));
+					strcat(stringResultadoEstaduais, buffer);
+				}
+				numeroEstadual--;
+			}
+		}
+
 	}
-        // verifica se votos é maior que 51% dos votos válidos
-		if( ( (float)Presidentes[numeroCandidato]/(float)votosPresidente ) >= ganhouPrimeiroTurno ) {
-			printf("%d\n", numeroCandidato);
 
-		}else  printf("Segundo turno\n");
-	
-	
-	// calcula resultado da urna para os senadores
-	while( numeroSenadores > 0 ) {
+}
 
-		if (numeroSenadores > 1) printf("%d ",resultadoUrna( Senadores, 1 ));
-		else printf("%d\n",resultadoUrna( Senadores, 1 ));
-		numeroSenadores--;
-
-	}
-
-	// calcula resultado da urna para os deputados federais
-	while( numeroFederal > 0 ) {
-
-		if (numeroFederal > 1) printf("%d ",resultadoUrna( Federal, 2 ));
-		else printf("%d\n",resultadoUrna( Federal, 2 ));
-		numeroFederal--;
-	}
-
-	// calcula resultado da urna para os deputados estaduais
-	while( numeroEstadual > 0 ) {
-
-		if (numeroEstadual > 1) printf("%d ",resultadoUrna( Estadual, 3 ));
-		else printf("%d\n",resultadoUrna( Estadual, 3 ));
-		numeroEstadual--;
-	}
+	printf("%s",stringResultadoSenadores);
+	printf("%s",stringResultadoFederais);
+	printf("%s",stringResultadoEstaduais);
 
 	// t= clock() - t;
 
